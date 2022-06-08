@@ -30,10 +30,13 @@ class FlaskSecureCookie(object):
 
     def _serialize(self, value):
         """Serialize and encrypt the cookie data."""
-        encrypted_cookie = self._cipher.encrypt(
-            data=json.dumps(value),
-            associated_data=self._app.config['COOKIE_ASSOCIATED_DATA'])
-        return encrypted_cookie
+        try:
+            encrypted_cookie = self._cipher.encrypt(
+                data=json.dumps(value),
+                associated_data=self._app.config['COOKIE_ASSOCIATED_DATA'])
+            return encrypted_cookie
+        except CipherError as e:
+            raise e
 
     def _unserialize(self, serialized_string):
         """Decrypt and unserialize the cookie data."""
@@ -70,7 +73,4 @@ class FlaskSecureCookie(object):
     def load_cookie(self, key):
         """Load the cookie data from a cookie in the request. """
         cookie_string = request.cookies.get(key, None)
-        if cookie_string:
-            return self._unserialize(serialized_string=cookie_string)
-
-        return cookie_string
+        return self._unserialize(serialized_string=cookie_string)

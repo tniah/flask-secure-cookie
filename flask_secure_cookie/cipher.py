@@ -32,28 +32,32 @@ class AESGCMCipher(object):
         if nonce is None:
             nonce = os.urandom(12)
 
-        iv = to_bytes(nonce)
-        v = self._ciphers[0].encrypt(
-            nonce=iv,
-            data=to_bytes(data),
-            associated_data=to_bytes(associated_data))
-        ct = binascii.hexlify(iv) + b':' + binascii.hexlify(v)
-        return b64encode_and_unicode(ct)
+        try:
+            iv = to_bytes(nonce)
+            v = self._ciphers[0].encrypt(
+                nonce=iv,
+                data=to_bytes(data),
+                associated_data=to_bytes(associated_data))
+            ct = binascii.hexlify(iv) + b':' + binascii.hexlify(v)
+            return b64encode_and_unicode(ct)
+        except Exception:
+            raise CipherError
 
     def decrypt(self, data: str, associated_data: str = '') -> str:
-        ct = base64.b64decode(to_bytes(data))
-        pos = ct.find(b':')
-        iv = binascii.unhexlify(ct[:pos])
-        v = binascii.unhexlify(ct[pos + 1:])
+        try:
+            ct = base64.b64decode(to_bytes(data))
+            pos = ct.find(b':')
+            iv = binascii.unhexlify(ct[:pos])
+            v = binascii.unhexlify(ct[pos + 1:])
 
-        for cipher in self._ciphers:
-            try:
-                txt = cipher.decrypt(
-                    nonce=iv,
-                    data=v,
-                    associated_data=to_bytes(associated_data))
-                return to_unicode(txt)
-            except Exception:
-                pass
-
-        raise CipherError
+            for cipher in self._ciphers:
+                try:
+                    txt = cipher.decrypt(
+                        nonce=iv,
+                        data=v,
+                        associated_data=to_bytes(associated_data))
+                    return to_unicode(txt)
+                except Exception:
+                    pass
+        except Exception:
+            raise CipherError
